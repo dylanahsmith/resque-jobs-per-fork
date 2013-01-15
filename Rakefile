@@ -3,7 +3,7 @@ require 'bundler/setup'
 
 require 'rake'
 require 'rake/testtask'
-require 'rake/rdoctask'
+require 'rdoc/task'
 
 # Add bundler gem building helpers
 Bundler::GemHelper.install_tasks
@@ -16,7 +16,7 @@ end
 
 task :default => :test
 
-Rake::RDocTask.new do |rdoc|
+RDoc::Task.new do |rdoc|
   version = File.exist?('VERSION') ? File.read('VERSION') : ""
 
   rdoc.rdoc_dir = 'rdoc'
