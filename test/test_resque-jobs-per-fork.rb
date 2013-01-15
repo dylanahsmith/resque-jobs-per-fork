@@ -6,6 +6,12 @@ class SomeJob
   end
 end
 
+class ParentSignalJob
+  def self.perform(signal)
+    Process.kill(signal, Process.ppid)
+  end
+end
+
 Resque.before_perform_jobs_per_fork do |worker|
   $SEQUENCE << :before_perform_jobs_per_fork
 end
@@ -62,6 +68,32 @@ class TestResqueMultiJobFork < Test::Unit::TestCase
          :before_perform_jobs_per_fork, :work_1, :after_perform_jobs_per_fork,
          :before_perform_jobs_per_fork, :work_2, :after_perform_jobs_per_fork
       ], $SEQUENCE)
+    end
+  end
+
+  if !defined?(RUBY_ENGINE) || defined?(RUBY_ENGINE) && RUBY_ENGINE != "jruby"
+    def test_should_stop_running_more_jobs_when_shutting_down
+      @worker.cant_fork = false
+      Resque::Job.create(:jobs, ParentSignalJob, 'QUIT')
+      Resque::Job.create(:jobs, SomeJob, 2)
+      @worker.work(0)
+
+      assert next_job = @worker.reserve
+      assert_equal SomeJob, next_job.payload_class
+    ensure
+      @worker.instance_variable_set(:@shutdown, nil)
+    end
+
+    def test_should_stop_running_more_jobs_after_pause
+      @worker.cant_fork = false
+      Resque::Job.create(:jobs, ParentSignalJob, 'USR2')
+      Resque::Job.create(:jobs, SomeJob, 2)
+      @worker.work(0)
+
+      assert next_job = @worker.reserve
+      assert_equal SomeJob, next_job.payload_class
+    ensure
+      @worker.instance_variable_set(:@pause, nil)
     end
   end
 end

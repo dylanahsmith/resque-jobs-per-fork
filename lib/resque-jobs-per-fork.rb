@@ -34,6 +34,11 @@ module Resque
   class Worker
 
     def perform_with_jobs_per_fork(job)
+      unless @cant_fork
+        trap('QUIT') { shutdown }
+        trap('USR2') { pause_processing }
+      end
+
       jobs_per_fork = [ENV['JOBS_PER_FORK'].to_i, 1].max
 
       run_hook :before_perform_jobs_per_fork, self
@@ -61,5 +66,22 @@ module Resque
 
     alias_method :perform_without_jobs_per_fork, :perform
     alias_method :perform, :perform_with_jobs_per_fork
+
+
+    def shutdown_with_jobs_per_fork
+      shutdown_without_jobs_per_fork
+      Process.kill('QUIT', @child) if @child
+    end
+
+    alias_method :shutdown_without_jobs_per_fork, :shutdown
+    alias_method :shutdown, :shutdown_with_jobs_per_fork
+
+    def pause_processing_with_jobs_per_fork
+      pause_processing_without_jobs_per_fork
+      Process.kill('USR2', @child) if @child
+    end
+
+    alias_method :pause_processing_without_jobs_per_fork, :pause_processing
+    alias_method :pause_processing, :pause_processing_with_jobs_per_fork
   end
 end
