@@ -12,6 +12,6 @@ Gem::Specification.new do |s|
   s.platform      = Gem::Platform::RUBY
   s.files         = Dir.glob("{lib,test}/**/*") + %w(LICENSE README.rdoc Rakefile)
 
-  s.add_dependency("resque", "~> 1.15")
+  s.add_dependency("resque", "~> 1.25")
 end
 
